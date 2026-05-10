@@ -1,5 +1,6 @@
 """
-Limkokwing Library API - Basic Digital System
+Basic API Structure with open-software
+Limkokwing Library API
 A FastAPI-based library management system that allows users to search for books,
 borrow and return books, and track overdue books with fines.
 """
