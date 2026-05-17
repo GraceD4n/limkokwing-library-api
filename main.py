@@ -220,6 +220,61 @@ async def get_available_books() -> list[Book]:
     return [book for book in books_db if book.available]
 
 
+# --- Endpoint 6: Simulate Concurrent Multi-User Operations ---
+
+@app.post("/simulate")
+async def simulate_concurrent_users() -> dict:
+    """
+    Demonstrates asynchronous programming by simulating multiple users
+    borrowing and returning books at the same time using asyncio.gather.
+
+    asyncio.gather schedules all tasks concurrently so they overlap in
+    execution — none waits for the previous one to finish.
+    """
+
+    async def borrow_for_user(user_id: int, book_id: int) -> dict:
+        """Simulate a single user borrowing a book asynchronously."""
+        await asyncio.sleep(0.1)  # Non-blocking I/O simulation
+        try:
+            result: dict = await borrow_book(BorrowRequest(user_id=user_id, book_id=book_id))
+            return {"user_id": user_id, "action": "borrow", "status": "success", "detail": result["message"]}
+        except HTTPException as e:
+            return {"user_id": user_id, "action": "borrow", "status": "failed", "detail": e.detail}
+
+    async def return_for_user(user_id: int, book_id: int) -> dict:
+        """Simulate a single user returning a book asynchronously."""
+        await asyncio.sleep(0.1)  # Non-blocking I/O simulation
+        try:
+            result: dict = await return_book(ReturnRequest(user_id=user_id, book_id=book_id))
+            return {"user_id": user_id, "action": "return", "status": "success", "detail": result["message"]}
+        except HTTPException as e:
+            return {"user_id": user_id, "action": "return", "status": "failed", "detail": e.detail}
+
+    # Phase 1: Four users borrow different books at the same time
+    borrow_tasks: list = [
+        borrow_for_user(user_id=201, book_id=5),
+        borrow_for_user(user_id=202, book_id=6),
+        borrow_for_user(user_id=203, book_id=7),
+        borrow_for_user(user_id=204, book_id=8),
+    ]
+    borrow_results: tuple = await asyncio.gather(*borrow_tasks)
+
+    # Phase 2: The same four users return their books at the same time
+    return_tasks: list = [
+        return_for_user(user_id=201, book_id=5),
+        return_for_user(user_id=202, book_id=6),
+        return_for_user(user_id=203, book_id=7),
+        return_for_user(user_id=204, book_id=8),
+    ]
+    return_results: tuple = await asyncio.gather(*return_tasks)
+
+    return {
+        "message": "Concurrent simulation complete — all tasks ran simultaneously via asyncio.gather",
+        "borrow_phase": list(borrow_results),
+        "return_phase": list(return_results),
+    }
+
+
 # --- Run the application ---
 
 if __name__ == "__main__":
